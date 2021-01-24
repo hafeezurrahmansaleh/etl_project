@@ -10,9 +10,28 @@ from urllib.parse import urlparse
 
 def scrap_file_from_web():
     url = 'http://pgcb.gov.bd/site/page/0dd38e19-7c70-4582-95ba-078fccb609a8/'
+
+    create_required_folder()
     check_url_validity(url)
     download_report_files(url)
     get_new_reports()
+
+
+def create_required_folder():
+    current_dir = pathlib.Path(__file__).parent
+    temp_dir = os.path.join(current_dir, 'temp_files\\')
+    inbound_dir = os.path.join(current_dir, 'inbound_files\\')
+    processed_dir = os.path.join(current_dir, 'processed_files\\')
+    output_dir = os.path.join(current_dir, 'output_files\\')
+
+    if not os.path.exists(temp_dir):
+        os.makedirs(temp_dir)
+    if not os.path.exists(inbound_dir):
+        os.makedirs(inbound_dir)
+    if not os.path.exists(processed_dir):
+        os.makedirs(processed_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
 
 def check_url_validity(url):
@@ -70,5 +89,3 @@ def get_new_reports():
                 os.remove('temp_files/' + file_name)  # Remove existing files
         else:
             os.remove('temp_files/' + file_name)  # Remove existing files
-
-

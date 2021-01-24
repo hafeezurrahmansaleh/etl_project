@@ -20,13 +20,13 @@ def process_files():
     file_names = os.listdir(inbound_dir)  # Get all report files from inbound_files dir
 
     for file_name in file_names:
+        print('Processing file: '+file_name)
         extracted_df = extract_data(file_name)
-        load_into_db(extracted_df)
         if not os.path.isfile(os.path.join(processed_dir, file_name)):  # check if file already exists in  processed_files
             shutil.move(os.path.join(inbound_dir, file_name), processed_dir)  # Move processed file to processed_dir
-            # processing
         else:
             os.remove('inbound_files/' + file_name)  # Remove if file is already exists in processed dir
+        print('Done......')
 
 
 def extract_data(file_name):
@@ -48,14 +48,11 @@ def extract_data(file_name):
                 row_start = row
             if str(dataset.iat[row, col]).replace(' ', '') == 'Total':
                 row_end = row
-                print(row_end)
                 break
             if 'area total' in str(dataset.iat[row, col]).lower():
-                print(str(dataset.iat[row, col]).lower())
                 area_total_indexes.append(dataset.loc[row:row].index.item())
         if row_start and row_end:
             break
-    print(area_total_indexes)
     dataset = dataset.drop(labels=area_total_indexes, axis=0)
     # RPick only relevant rows
     df_required = dataset.loc[row_start + 1:row_end - 1]
@@ -72,7 +69,6 @@ def extract_data(file_name):
             if dataset.iat[row, col] == 'Date (day):':
                 date_cell_index = row
                 report_date = dataset.iat[row, col + 1]
-                print(dataset.iat[row + 1, col - 1])
                 break
 
     # Convert the date from datetime and format it as per requirement
@@ -82,31 +78,14 @@ def extract_data(file_name):
     df_required.insert(0, 'Date', formatted_report_date)
 
     # Replacing spaces and special characters  with underscores for column names
-    df_required.columns = df_required.columns.str.translate({ord(c): "_" for c in " !@#$%^&*()[]{};:,./<>?\|`~-=_+"})
 
-    output_file_name = 'output_' + report_date.date().strftime("%m_%d_%Y ")
+    df_required.columns = df_required.columns.str.translate({ord(c): " " for c in "!@#$%^&*()[]{};:,./<>?\|`~-=_+"})
+    df_required.columns = df_required.columns.str.title()
+    df_required.columns = df_required.columns.str.translate({ord(c): "" for c in " "})
+
+    output_file_name = 'output_' + report_date.date().strftime("%m_%d_%Y ")+'.csv'
     df_required.to_csv('output_files\\' + output_file_name, index=False)
     return df_required
-
-
-def load_into_db(dataframe):
-    dbname = 'report_db'
-    conn = sqlite3.connect(dbname + '.sqlite')
-    cur = conn.cursor()
-
-    # Create your connection.
-    # cnx = sqlite3.connect(':memory:')
-    dataframe.to_sql(name='forecast_report', con=conn, if_exists='append', index=False)
-
-    # p2 = pd.read_sql('select * from forecast_report', conn)
-    # print(p2)
-    #
-    cur.execute('SELECT * FROM forecast_report')
-    names = list(map(lambda x: x[0], cur.description))  # Returns the column names
-    print(names)
-    for row in cur:
-        print(row)
-    cur.close()
 
 
 if __name__ == "__main__":
